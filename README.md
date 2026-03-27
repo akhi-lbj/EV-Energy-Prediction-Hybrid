@@ -16,5 +16,3 @@ The dataset used comprises historical energy consumption records along with rele
 ## Outputs
 The expected outcomes include accurate energy consumption forecasts and visualizations of the prediction results.
 
-## License
-This project is licensed under the MIT License.
