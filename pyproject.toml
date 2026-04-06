@@ -1,5 +1,5 @@
 [project]
-name = "ml-project"
+name = "ev-energy-prediction-hybrid"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
