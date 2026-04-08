@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 
 # ====================== 1. LOAD & PREPROCESS ======================
 print("🚀 Loading enhanced ACN 2019 dataset...")
-df = pd.read_csv("Code/Stage-2/dataset/acn_enhanced_final_2019_data.csv")
+df = pd.read_csv("acn_enhanced_final_2019_data.csv")
 
 # Convert connectionTime to datetime and extract temporal features
 df['connectionTime'] = pd.to_datetime(df['connectionTime'], errors='coerce', utc=True)
