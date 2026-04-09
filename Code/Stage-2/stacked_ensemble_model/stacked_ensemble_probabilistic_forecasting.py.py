@@ -143,22 +143,22 @@ print(f"WITHOUT behavioral → MAE: {without_mae:.3f} | R²: {without_r2:.4f}")
 print(f"Delta MAE: {with_mae - without_mae:+.3f} kWh (negative = improvement with features)")
 
 # ====================== PROBABILISTIC FORECASTING LAYER ======================
-# Append this block RIGHT AFTER your existing ablation code
-# (It re-uses df_train, df_val, df_test, feat_cols, and the same behavioral features)
-
+# ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 print("\n🚀 Starting Probabilistic Forecasting Layer (QRF + QEGBR-style)...")
 print("Using exact same features & split as your stacked ensemble (WITH behavioral features)")
 
-# Reuse the same feature matrix from your last run
+# === CRITICAL FIX: Force WITH behavioral features (matches your paper) ===
+feat_cols = base_features + behavioral_features   # ←←← THIS IS THE FIX
+
 X_train = df_train[feat_cols].copy()
 y_train = df_train['kWhDelivered'].copy()
 X_test  = df_test[feat_cols].copy()
 y_test  = df_test['kWhDelivered'].copy()
 
-# ====================== 1. LightGBM Quantile Models (QRF-style) ======================
-import lightgbm as lgb
-from sklearn.metrics import mean_absolute_error
+# Create folder
+os.makedirs("prob_models", exist_ok=True)
 
+# ====================== 1. LightGBM Quantile Models (QRF-style) ======================
 quantiles = [0.05, 0.50, 0.95]
 lgb_quantile_models = {}
 
@@ -184,12 +184,9 @@ for alpha in quantiles:
                       callbacks=[lgb.early_stopping(100, verbose=False)])
     
     lgb_quantile_models[alpha] = model
-    # Save immediately
     model.save_model(f"prob_models/lgb_quantile_alpha_{int(alpha*100)}.txt")
 
 # ====================== 2. XGBoost Quantile Models (QEGBR-style) ======================
-import xgboost as xgb
-
 xgb_quantile_models = {}
 for alpha in quantiles:
     print(f"   Training XGBoost Quantile α = {alpha:.2f} ...")
@@ -219,15 +216,15 @@ for alpha in quantiles:
 print("\n📊 Evaluating Probabilistic Models on Test Set...")
 
 # LightGBM quantile predictions
-lgb_lower = lgb_quantile_models[0.05].predict(X_test)
+lgb_lower  = lgb_quantile_models[0.05].predict(X_test)
 lgb_median = lgb_quantile_models[0.50].predict(X_test)
-lgb_upper = lgb_quantile_models[0.95].predict(X_test)
+lgb_upper  = lgb_quantile_models[0.95].predict(X_test)
 
 # XGBoost quantile predictions
 dtest = xgb.DMatrix(X_test)
-xgb_lower = xgb_quantile_models[0.05].predict(dtest)
+xgb_lower  = xgb_quantile_models[0.05].predict(dtest)
 xgb_median = xgb_quantile_models[0.50].predict(dtest)
-xgb_upper = xgb_quantile_models[0.95].predict(dtest)
+xgb_upper  = xgb_quantile_models[0.95].predict(dtest)
 
 # Metrics
 def pi_metrics(y_true, lower, upper, nominal_coverage=0.90):
@@ -242,13 +239,12 @@ print("\n=== PROBABILISTIC RESULTS (Test Set) ===")
 print(f"LightGBM Quantile (QRF-style) → 90% PI Coverage: {lgb_cov:.1%} | Avg Width: {lgb_width:.3f} kWh")
 print(f"XGBoost Quantile (QEGBR-style) → 90% PI Coverage: {xgb_cov:.1%} | Avg Width: {xgb_width:.3f} kWh")
 
-# Also report median MAE for reference
 lgb_median_mae = mean_absolute_error(y_test, lgb_median)
 xgb_median_mae = mean_absolute_error(y_test, xgb_median)
 print(f"Median MAE (LightGBM) : {lgb_median_mae:.3f} kWh")
 print(f"Median MAE (XGBoost)  : {xgb_median_mae:.3f} kWh")
 
-# Save results to log
+# Log results
 pd.DataFrame([{
     'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     'experiment': 'Probabilistic_Layer',
@@ -258,8 +254,10 @@ pd.DataFrame([{
     'xgb_avg_width': xgb_width,
     'lgb_median_mae': lgb_median_mae,
     'xgb_median_mae': xgb_median_mae,
-    'note': 'Same features & split as stacked ensemble'
+    'note': 'Same features & split as stacked ensemble (WITH behavioral)'
 }]).to_csv("probabilistic_results_log.csv", mode='a', header=not os.path.exists("probabilistic_results_log.csv"), index=False)
 
 print("\n✅ Probabilistic models saved in folder 'prob_models/'")
-print("   → Use these alongside your stacked ensemble for the optimization layer later.")
+print("   → lgb_quantile_alpha_5.txt, 50.txt, 95.txt")
+print("   → xgb_quantile_alpha_5.model, 50.model, 95.model")
+print("   → Ready to combine with your stacked ensemble in the optimization layer!")
