@@ -1,0 +1,2 @@
+timestamp,experiment,lgb_90_coverage,lgb_avg_width,xgb_90_coverage,xgb_avg_width,lgb_median_mae,xgb_median_mae,note
+2026-04-09 18:39:53,Probabilistic_Layer,0.721117833477384,7.822580194709824,0.738403918179199,7.989382,2.4924480384664665,2.536165502514082,Same features & split as stacked ensemble (WITH behavioral)
