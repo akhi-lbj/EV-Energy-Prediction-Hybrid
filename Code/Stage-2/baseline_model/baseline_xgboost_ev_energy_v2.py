@@ -40,32 +40,24 @@ target = 'kWhDelivered'
 df = df.dropna(subset=[target] + feature_cols).copy()
 print(f"✅ Clean dataset: {df.shape[0]:,} sessions | {len(feature_cols)} features")
 
-# ====================== 2. STRATIFIED MONTHLY SPLIT ======================
-# Test: 800 sessions, ~66-67 per month
-# Val: 600 sessions, ~50 per month
-# Train: remaining
-
+# ====================== 2. 50:10:40 MONTH-STRATIFIED SPLIT (EXACTLY matching v15/v16) ======================
 np.random.seed(42)
-
-test_indices = []
-val_indices = []
+test_indices, val_indices = [], []
 
 for month in range(1, 13):
     month_df = df[df['month'] == month]
     n_month = len(month_df)
     
-    # Sample for test (~66-67 per month)
-    test_sample = month_df.sample(n=min(67, n_month), random_state=42)
+    # Test = 40%
+    test_sample = month_df.sample(n=int(0.4 * n_month), random_state=42)
     test_indices.extend(test_sample.index)
     
-    # Remaining after test
     remaining = month_df.drop(test_sample.index)
     
-    # Sample for validation (~50 per month)
-    val_sample = remaining.sample(n=min(50, len(remaining)), random_state=42)
+    # Validation = 10%
+    val_sample = remaining.sample(n=int(0.1 * n_month), random_state=42)
     val_indices.extend(val_sample.index)
 
-# Create masks
 test_mask = df.index.isin(test_indices)
 val_mask = df.index.isin(val_indices)
 train_mask = ~(test_mask | val_mask)
@@ -74,9 +66,9 @@ X_train, y_train = df.loc[train_mask, feature_cols], df.loc[train_mask, target]
 X_val,   y_val   = df.loc[val_mask, feature_cols],   df.loc[val_mask, target]
 X_test,  y_test  = df.loc[test_mask, feature_cols],  df.loc[test_mask, target]
 
-print(f"Train: {len(X_train):,} sessions")
-print(f"Validation (balanced): {len(X_val):,} sessions (~50 per month)")
-print(f"Test (balanced): {len(X_test):,} sessions (~67 per month)")
+print(f"Train (50%): {len(X_train):,} sessions")
+print(f"Validation (10%): {len(X_val):,} sessions")
+print(f"Test (40%): {len(X_test):,} sessions (all months present)")
 
 # Scale
 scaler = StandardScaler()
@@ -108,7 +100,7 @@ model = xgb.train(
     verbose_eval=100
 )
 
-# ====================== 4. EVALUATION (MAE, RMSE, R² only) ======================
+# ====================== 4. EVALUATION ======================
 def evaluate_model(model, X_scaled, y_true, set_name):
     preds = model.predict(xgb.DMatrix(X_scaled))
     mae = mean_absolute_error(y_true, preds)
@@ -120,15 +112,15 @@ def evaluate_model(model, X_scaled, y_true, set_name):
     print(f"R²   : {r2:.4f}")
     return mae, rmse, r2
 
-print("\n=== BASELINE XGBoost RESULTS ===")
+print("\n=== BASELINE XGBoost RESULTS (50:10:40 Split) ===")
 train_mae, train_rmse, train_r2 = evaluate_model(model, X_train_scaled, y_train, "Train")
-val_mae,   val_rmse,   val_r2   = evaluate_model(model, X_val_scaled,   y_val,   "Validation (Balanced)")
-test_mae,  test_rmse,  test_r2  = evaluate_model(model, X_test_scaled,  y_test,  "Test (Balanced - 800 sessions)")
+val_mae,   val_rmse,   val_r2   = evaluate_model(model, X_val_scaled,   y_val,   "Validation")
+test_mae,  test_rmse,  test_r2  = evaluate_model(model, X_test_scaled,  y_test,  "Test (40%)")
 
-# ====================== 5. SAVE RESULTS TO CSV LOG ======================
+# ====================== 5. LOG ======================
 results_row = pd.DataFrame([{
     'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    'experiment': 'Stratified_Balanced_Monthly',
+    'experiment': 'Stratified_50_10_40',
     'n_train': len(X_train),
     'n_val': len(X_val),
     'n_test': len(X_test),
@@ -169,11 +161,11 @@ pred = model.predict(xgb.DMatrix(example_scaled))[0]
 print(f"→ Predicted kWhDelivered: **{pred:.2f} kWh**")
 
 # Save model
-os.makedirs("xgboost_models", exist_ok=True)
-model.save_model("xgboost_models/xgboost_baseline_stratified.json")
+os.makedirs("xgboost_models_v2", exist_ok=True)
+model.save_model("xgboost_models_v2/xgboost_baseline_50_10_40.json")
 import joblib
-joblib.dump(scaler, "xgboost_models/scaler_baseline_stratified.pkl")
-joblib.dump(day_le, "xgboost_models/day_le.pkl")
-joblib.dump(grid_le, "xgboost_models/grid_le.pkl")
+joblib.dump(scaler, "xgboost_models_v2/scaler_baseline_50_10_40.pkl")
+joblib.dump(day_le, "xgboost_models_v2/day_le.pkl")
+joblib.dump(grid_le, "xgboost_models_v2/grid_le.pkl")
 
-print("\n✅ XGBoost baseline saved.")
+print("\n✅ XGBoost baseline (50:10:40) saved.")
