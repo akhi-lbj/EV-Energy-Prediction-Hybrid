@@ -83,7 +83,7 @@ dtest  = xgb.DMatrix(X_test_scaled,  label=y_test)
 # ====================== 3. TRAIN XGBoost ======================
 params = {
     'objective': 'reg:squarederror',
-    'eval_metric': 'rmse',
+    'eval_metric': ['rmse', 'mae'],
     'max_depth': 8,
     'learning_rate': 0.05,
     'subsample': 0.85,
@@ -93,12 +93,37 @@ params = {
 }
 
 print("\nTraining XGBoost Baseline...")
+
+def xg_r2_score(preds, dmatrix):
+    labels = dmatrix.get_label()
+    r2 = r2_score(labels, preds)
+    return 'r2', r2
+
+evals_result = {}
+
 model = xgb.train(
     params, dtrain, num_boost_round=1200,
     evals=[(dtrain, 'train'), (dval, 'val')],
+    custom_metric=xg_r2_score,
+    evals_result=evals_result,
     early_stopping_rounds=60,
     verbose_eval=100
 )
+
+# --- Save Per-Iteration Metrics ---
+iterations = len(evals_result['train']['rmse'])
+history_df = pd.DataFrame({
+    'iteration': range(1, iterations + 1),
+    'train_rmse': evals_result['train']['rmse'],
+    'train_mae': evals_result['train']['mae'],
+    'train_r2': evals_result['train']['r2'],
+    'val_rmse': evals_result['val']['rmse'],
+    'val_mae': evals_result['val']['mae'],
+    'val_r2': evals_result['val']['r2'],
+})
+history_df.to_csv("training_metrics_per_iteration.csv", index=False)
+print("✅ Saved per-iteration metrics to 'training_metrics_per_iteration.csv'")
+
 
 # ====================== 4. EVALUATION ======================
 def evaluate_model(model, X_scaled, y_true, set_name):

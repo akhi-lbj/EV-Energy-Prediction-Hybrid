@@ -13,6 +13,12 @@ import joblib
 warnings.filterwarnings('ignore')
 
 print("🚀 Loading dataset for Ablation Study (exact same split as v15)...")
+if os.path.exists("base_models_metrics_per_iteration.csv"):
+    os.remove("base_models_metrics_per_iteration.csv")
+    
+def xg_r2_score_float(y_true, y_pred):
+    return r2_score(y_true, y_pred)
+    
 df = pd.read_csv("acn_enhanced_final_2019_data.csv")
 
 # --- Temporal features (same as v15) ---
@@ -87,14 +93,65 @@ def run_ablation(with_behavioral=True):
     
     # Same stacked ensemble as v15 (RF + XGB + Cat + HistGB → LGB meta)
     rf = RandomForestRegressor(n_estimators=300, max_depth=9, min_samples_leaf=5, max_features=0.75, random_state=42, n_jobs=-1)
-    xgb_model = xgb.XGBRegressor(n_estimators=500, max_depth=7, learning_rate=0.025, subsample=0.8, colsample_bytree=0.8, reg_lambda=3.0, reg_alpha=1.5, random_state=42, tree_method='hist')
-    cat_model = cb.CatBoostRegressor(iterations=600, depth=8, learning_rate=0.03, l2_leaf_reg=4, random_seed=42, verbose=0)
+    xgb_model = xgb.XGBRegressor(n_estimators=500, max_depth=7, learning_rate=0.025, subsample=0.8, colsample_bytree=0.8, reg_lambda=3.0, reg_alpha=1.5, random_state=42, tree_method='hist', eval_metric=xg_r2_score_float)
+    cat_model = cb.CatBoostRegressor(iterations=600, depth=8, learning_rate=0.03, l2_leaf_reg=4, random_seed=42, verbose=0, custom_metric=['MAE', 'R2'])
     hist_model = HistGradientBoostingRegressor(max_iter=600, max_depth=8, learning_rate=0.03, random_state=42)
     
     rf.fit(X_train, y_train)
-    xgb_model.fit(X_train, y_train)
-    cat_model.fit(X_train, y_train)
+    
+    # Fit with explicit eval sets to capture epoch history
+    xgb_model.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_val, y_val), (X_test, y_test)], verbose=False)
+    cat_model.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_val, y_val), (X_test, y_test)])
+    
     hist_model.fit(X_train, y_train)
+    
+    # ------------------ Logging Base Layer Iterations ------------------
+    # 1. CatBoost Logs
+    cat_res = cat_model.evals_result_
+    cat_df = pd.DataFrame({
+        'experiment': f'BaseLayer_{suffix} [CatBoost]',
+        'iteration': range(1, len(cat_res['learn']['RMSE']) + 1),
+        'train_rmse': cat_res['learn']['RMSE'],
+        'train_mae': cat_res['learn']['MAE'],
+        'train_r2': cat_res['learn']['R2'],
+        'val_rmse': cat_res['validation_0']['RMSE'],
+        'val_mae': cat_res['validation_0']['MAE'],
+        'val_r2': cat_res['validation_0']['R2'],
+        'test_rmse': cat_res['validation_1']['RMSE'],
+        'test_mae': cat_res['validation_1']['MAE'],
+        'test_r2': cat_res['validation_1']['R2']
+    })
+    
+    # 2. XGBoost Logs (using native RMSE + Custom R2. MAE omitted naturally by Sklearn wrapper interaction)
+    xgb_res = xgb_model.evals_result()
+    xgb_df = pd.DataFrame({
+        'experiment': f'BaseLayer_{suffix} [XGBoost]',
+        'iteration': range(1, len(xgb_res['validation_0']['rmse']) + 1),
+        'train_rmse': xgb_res['validation_0']['rmse'],
+        'train_r2': xgb_res['validation_0']['xg_r2_score_float'],
+        'val_rmse': xgb_res['validation_1']['rmse'],
+        'val_r2': xgb_res['validation_1']['xg_r2_score_float'],
+        'test_rmse': xgb_res['validation_2']['rmse'],
+        'test_r2': xgb_res['validation_2']['xg_r2_score_float']
+    })
+    
+    # 3. RF & HistGB Final Metrics (Log as single iteration to capture baseline mathematical truth without epoch slicing)
+    rf_df = pd.DataFrame([{
+        'experiment': f'BaseLayer_{suffix} [RandomForest]', 'iteration': 1,
+        'train_rmse': np.sqrt(mean_squared_error(y_train, rf.predict(X_train))),
+        'val_rmse': np.sqrt(mean_squared_error(y_val, rf.predict(X_val))),
+        'test_rmse': np.sqrt(mean_squared_error(y_test, rf.predict(X_test)))
+    }])
+    
+    hist_df = pd.DataFrame([{
+        'experiment': f'BaseLayer_{suffix} [HistGradientBoosting]', 'iteration': 1,
+        'train_rmse': np.sqrt(mean_squared_error(y_train, hist_model.predict(X_train))),
+        'val_rmse': np.sqrt(mean_squared_error(y_val, hist_model.predict(X_val))),
+        'test_rmse': np.sqrt(mean_squared_error(y_test, hist_model.predict(X_test)))
+    }])
+
+    pd.concat([cat_df, xgb_df, rf_df, hist_df]).to_csv("base_models_metrics_per_iteration.csv", mode='a', header=not os.path.exists("base_models_metrics_per_iteration.csv"), index=False)
+    # -------------------------------------------------------------------
     
     stack_train = np.column_stack((rf.predict(X_train), xgb_model.predict(X_train), cat_model.predict(X_train), hist_model.predict(X_train)))
     stack_test  = np.column_stack((rf.predict(X_test),  xgb_model.predict(X_test),  cat_model.predict(X_test),  hist_model.predict(X_test)))
