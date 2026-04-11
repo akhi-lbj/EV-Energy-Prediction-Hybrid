@@ -111,9 +111,10 @@ def predict_probabilistic(sample_dict: dict):
     print("="*70)
     for name, res in results.items():
         print(f"\n{name}:")
-        print(f"   Median Demand      : {res['median_kWh']} kWh")
-        print(f"   90% Prediction Interval : {res['90%_PI']} kWh")
-        print(f"   Interval Width     : {res['width_kWh']} kWh")
+        print(f"   5th Percentile (Lower Bound)  : {res['90%_PI'][0]} kWh")
+        print(f"   50th Percentile (Median)      : {res['median_kWh']} kWh")
+        print(f"   95th Percentile (Upper Bound) : {res['90%_PI'][1]} kWh")
+        print(f"   Interval Width (90% PI)       : {res['width_kWh']} kWh")
     print(f"\n📊 ENSEMBLE MEDIAN: {ensemble_median} kWh")
     print("="*70)
     
@@ -131,7 +132,7 @@ if __name__ == "__main__":
         "parsed_minutesAvailable": 641,
         "parsed_kWhRequested": 99.75,
         "revisionCount": 2,
-        "urgency_score": 0.92,
+        "urgency_score": 92.0,
         "flexibility_index": 0.69,
         "habit_stability": 0.52,
         "grid_impact_proxy": 2,
@@ -148,7 +149,7 @@ if __name__ == "__main__":
         "parsed_minutesAvailable": 60,
         "parsed_kWhRequested": 8.0,
         "revisionCount": 1,
-        "urgency_score": 0.9,
+        "urgency_score": 90.0,
         "flexibility_index": 0.8,
         "habit_stability": 0.8,
         "grid_impact_proxy": 1,
