@@ -30,7 +30,7 @@ te_user = joblib.load(f"{ENCODER_DIR}/te_user.pkl")
 lgb_models = {}
 for alpha in [5, 50, 95]:
     txt_path = f"{PROB_DIR}/lgb_quantile_alpha_{alpha}.txt"
-    pkl_path = f"{PROB_DIR}/lgb_quantile_alpha_{alpha}.pkl"   # fallback if you add it later
+    pkl_path = f"{PROB_DIR}/lgb_quantile_alpha_{alpha}.model"   # fallback if you add it later
     
     if os.path.exists(pkl_path):
         lgb_models[alpha] = joblib.load(pkl_path)
@@ -53,8 +53,11 @@ def prepare_features(sample: dict) -> pd.DataFrame:
     # Temporal
     conn_time = pd.to_datetime(sample['connectionTime'])
     df['hour_of_day'] = conn_time.hour
-    df['day_of_week_encoded'] = pd.factorize([sample.get('day_of_week', 'Monday')])[0][0]
-    df['is_weekend'] = 1 if df['day_of_week_encoded'] >= 5 else 0
+    day_map = {'Tuesday': 0, 'Wednesday': 1, 'Thursday': 2, 'Friday': 3, 'Saturday': 4, 'Sunday': 5, 'Monday': 6}
+    day_name = sample.get('day_of_week', 'Monday')
+    
+    df['day_of_week_encoded'] = day_map.get(day_name, 6)
+    df['is_weekend'] = 1 if day_name in ['Saturday', 'Sunday'] else 0
     
     # Derived features
     df['energy_per_minute'] = df['parsed_kWhRequested'] / (df['parsed_minutesAvailable'] + 1e-5)
@@ -76,12 +79,12 @@ def predict_probabilistic(sample_dict: dict):
     X = X_df.values
     
     # LightGBM Predictions
-    lgb_lower  = lgb_models[5].predict(X)
-    lgb_median = lgb_models[50].predict(X)
-    lgb_upper  = lgb_models[95].predict(X)
+    lgb_lower  = lgb_models[5].predict(X_df)
+    lgb_median = lgb_models[50].predict(X_df)
+    lgb_upper  = lgb_models[95].predict(X_df)
     
     # XGBoost Predictions
-    dtest = xgb.DMatrix(X)
+    dtest = xgb.DMatrix(X_df)
     xgb_lower  = xgb_models[5].predict(dtest)
     xgb_median = xgb_models[50].predict(dtest)
     xgb_upper  = xgb_models[95].predict(dtest)
