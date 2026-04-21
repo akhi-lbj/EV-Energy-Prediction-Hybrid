@@ -177,5 +177,4 @@ joblib.dump(te_station, "sota_models_v2/te_station.pkl")
 joblib.dump(te_user, "sota_models_v2/te_user.pkl")
 
 print("\n✅ Phase 2 COMPLETE & FIXED! Models saved in 'sota_models_v2/'")
-print("Next: Reply with 'Phase 3' for Attention-GRU + Mamba hybrid + Conformal Prediction")
 wandb.finish()
