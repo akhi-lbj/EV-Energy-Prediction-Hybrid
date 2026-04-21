@@ -4,6 +4,8 @@ import os
 import warnings
 import joblib
 import lightgbm as lgb
+import shap
+import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.ensemble import RandomForestRegressor
 import xgboost as xgb
@@ -145,6 +147,17 @@ def run_ablation(use_behavioral=True):
 
     print(f"  Ensemble MAE : {ensemble_mae:.3f} kWh | R²: {ensemble_r2:.4f}")
     print(f"  90% PI → Coverage: {coverage:.1%} | Width: {width:.3f} kWh (q_hat={q_hat:.3f})")
+
+    if use_behavioral:
+        print("   Generating SHAP summary plot...")
+        explainer = shap.TreeExplainer(q_models[0.50])
+        shap_values = explainer.shap_values(X_test.iloc[:500])
+        plt.figure(figsize=(10, 8))
+        shap.summary_plot(shap_values, X_test.iloc[:500], show=False)
+        plt.tight_layout()
+        plt.savefig(f"shap_summary_{suffix}.pdf", bbox_inches='tight')
+        plt.close()
+        print(f"   SHAP summary saved as shap_summary_{suffix}.pdf")
 
     return {
         'behavioral': suffix,
