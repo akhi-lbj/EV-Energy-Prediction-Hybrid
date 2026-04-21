@@ -1,0 +1,19 @@
+Evaluation Matrices
+1) Baseline Model (XG-Boost)
+With Behavioral
+MAE  : 0.550 kWh
+RMSE : 1.328 kWh
+R²   : 0.9802
+Without Behavioral Features
+MAE  :  0.546 kWh
+RMSE :  1.284 kWh
+R²   :  0.9815 kWh
+
+2) Ensemble Model (With Probablistic Prediction)
+Group of RandomForest, XG-Boost, CatBoost, LightGBM Models
+With Behavioral
+MAE: 0.288 kWh | RMSE: 0.857 | R²: 0.991
+90.0% PI Coverage: 97.5% | Average Width: 4.207 kWh
+Without Behavioral
+MAE : 0.299 kWh | RMSE: 0.8945 | R²: 0.9910
+90% PI → Coverage: 97.1% | Width: 4.443 kWh (q_hat=0.535)
