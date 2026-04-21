@@ -111,6 +111,7 @@ def run_ablation(use_behavioral=True):
 
     ensemble_pred = meta_model.predict(stack_test)
     ensemble_mae = mean_absolute_error(y_test, ensemble_pred)
+    ensemble_rmse = np.sqrt(mean_squared_error(y_test, ensemble_pred))
     ensemble_r2 = r2_score(y_test, ensemble_pred)
 
     # Probabilistic Quantile + Conformal (fresh for this feature set)
@@ -145,7 +146,7 @@ def run_ablation(use_behavioral=True):
     coverage = np.mean((y_test >= lower) & (y_test <= upper))
     width = np.mean(upper - lower)
 
-    print(f"  Ensemble MAE : {ensemble_mae:.3f} kWh | R²: {ensemble_r2:.4f}")
+    print(f"  Ensemble MAE : {ensemble_mae:.3f} kWh | RMSE: {ensemble_rmse:.3f} | R²: {ensemble_r2:.4f}")
     print(f"  90% PI → Coverage: {coverage:.1%} | Width: {width:.3f} kWh (q_hat={q_hat:.3f})")
 
     if use_behavioral:
@@ -162,6 +163,7 @@ def run_ablation(use_behavioral=True):
     return {
         'behavioral': suffix,
         'ensemble_mae': ensemble_mae,
+        'ensemble_rmse': ensemble_rmse,
         'ensemble_r2': ensemble_r2,
         'pi_coverage': coverage,
         'pi_width': width,
