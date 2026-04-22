@@ -1,0 +1,36 @@
+=== FULL PROBABILISTIC FORECASTING RESULTS ===
+Point Forecast (Stack Meta) → Test MAE: 0.288 kWh
+90.0% PI Coverage: 97.5% | Average Width: 4.207 kWh
+
+🔍 Example Prediction with Uncertainty:
+Session 0:
+  Input Features:
+    parsed_milesRequested: 80.0
+    parsed_WhPerMile: 222.0
+    parsed_minutesAvailable: 514.0
+    parsed_kWhRequested: 17.76
+    revisionCount: 1.0
+    hour: 18.0
+    day_of_week_encoded: 0.0
+    is_weekend: 0.0
+    is_peak: 1.0
+    urgency_score: 30.0
+    flexibility_index: 0.71
+    habit_stability: 0.9
+    grid_impact_proxy: 2.0
+    urgency_flex_interaction: 21.299999999999997
+    revision_urgency: 30.0
+    habit_grid: 1.8
+    energy_per_minute: 0.0345525285106512
+    request_efficiency: 0.3603603441279124
+    duration_hours: 8.504166666666666
+    charging_efficiency: 0.7057432432432432
+    requested_gap: 5.226000000000001
+    hour_sin: -1.0
+    hour_cos: -1.8369701987210297e-16
+    station_encoded: 10.67964850745326
+    user_encoded: 11.390944797921223
+  Predicted (median): 12.78 kWh
+  90% PI: [11.73, 13.37] kWh
+  True value: 12.53 kWh
+✅ Full probabilistic predictions saved to 'probabilistic_predictions_test.csv'
