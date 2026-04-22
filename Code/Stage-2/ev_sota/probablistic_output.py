@@ -128,6 +128,9 @@ pi_metrics(y_test, lower, upper)
 print("\n🔍 Example Prediction with Uncertainty:")
 example_idx = 0
 print(f"Session {example_idx}:")
+print("  Input Features:")
+for col, val in X_test.iloc[example_idx].items():
+    print(f"    {col}: {val}")
 print(f"  Predicted (median): {q50[example_idx]:.2f} kWh")
 print(f"  90% PI: [{lower[example_idx]:.2f}, {upper[example_idx]:.2f}] kWh")
 print(f"  True value: {y_test.iloc[example_idx]:.2f} kWh")
