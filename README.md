@@ -63,11 +63,13 @@ Session 0:
 - **Languages**: Python >= 3.12
 - **Core ML Libraries**: `xgboost`, `catboost`, `lightgbm`, `scikit-learn`, `torch`
 - **Data & Ops**: `pandas`, `numpy`, `optuna` (Hyperparameter tuning), `wandb`, `shap` (Interpretability)
-
-Managed via `uv` (see `pyproject.toml`).
+Dependencies are listed in `requirements.txt`.
 
 ## 💻 Getting Started
 
 1. Clone the repository.
-2. Ensure you have Python >= 3.12. Install dependencies based on `pyproject.toml` (e.g., using `uv` or `pip`).
+2. Ensure you have Python >= 3.12. Install dependencies using `uv`:
+   ```bash
+   uv add -r requirements.txt
+   ```
 3. Check the `Code/` directory for the various modelling stages and inference scripts.
