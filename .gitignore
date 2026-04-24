@@ -176,3 +176,6 @@ Initial_Research/
 # Dependency management
 pyproject.toml
 uv.lock
+
+# Research paper files
+ICDM Paper Submission/
