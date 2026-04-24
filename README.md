@@ -52,7 +52,7 @@ Session 0:
 
 ## 📂 Project Structure
 
-- `Code/Stage-2/stacked_ensemble_model/`: Contains the evolution of the Stacked Ensemble model scripts, ablation study logs, and serialized model artifacts.
+- `Code/Stage-2/ev_sota/`: Contains the evolution of the Stacked Ensemble model scripts, ablation study logs, and serialized model artifacts.
 - `Code/Stage-2/baseline_model/`: Contains the XGBoost baseline implementation.
 - `Code/Inference Results/`: Logs and outputs of the final probabilistic predictions.
 - `Code/Final_Metrics/`: Comprehensive logs of evaluation matrices across baseline and ensemble models.
