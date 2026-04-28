@@ -43,7 +43,7 @@ export default function Home() {
   return (
     <main className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-xl)' }}>
-        <h1 className="display-title" style={{ marginBottom: 0 }}>Smart EV Predictor</h1>
+        <h1 className="display-title" style={{ marginBottom: 0 }}>EV ML Project</h1>
         <button onClick={fetchRandomSession} className="btn-randomizer" disabled={isLoading}>
           ⚡ Auto-Fill Random Session
         </button>
