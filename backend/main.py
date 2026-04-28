@@ -194,15 +194,6 @@ app.add_middleware(
 def health():
     return {"status": "ok", "models_loaded": "models" in _state}
 
-@app.get("/debug/ls")
-def debug_ls():
-    import os
-    files = []
-    for root, dirs, filenames in os.walk(BASE_DIR):
-        for f in filenames:
-            files.append(os.path.relpath(os.path.join(root, f), BASE_DIR))
-    return {"base_dir": BASE_DIR, "files": files}
-
 
 @app.get("/predict/fetch")
 def fetch_random():
