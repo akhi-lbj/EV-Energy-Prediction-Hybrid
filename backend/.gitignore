@@ -1,6 +1,4 @@
-# Large model files — managed via Git LFS or copied manually (see setup_assets.py)
-models/
-data/
+
 
 # Python cache
 __pycache__/
