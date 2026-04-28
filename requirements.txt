@@ -8,3 +8,7 @@ shap
 torch
 wandb
 xgboost
+pulp
+matplotlib
+seaborn
+
