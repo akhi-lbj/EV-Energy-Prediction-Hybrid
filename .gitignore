@@ -171,6 +171,12 @@ logs/
 tensorboard/
 wandb/
 
+# Allow backend deployment assets through (models + data needed on Render)
+!backend/models/
+!backend/models/**
+!backend/data/
+!backend/data/**
+
 Initial_Research/
 
 # Dependency management
