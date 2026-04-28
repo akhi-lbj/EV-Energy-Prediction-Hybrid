@@ -1,43 +1,53 @@
+/**
+ * /api/predict — thin proxy to the FastAPI backend.
+ *
+ * Set NEXT_PUBLIC_API_URL (or API_URL) in .env.local to your Render URL:
+ *   API_URL=https://ev-energy-prediction-api.onrender.com
+ *
+ * Falls back to http://localhost:8000 for local development.
+ */
 import { NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import util from 'util';
-import path from 'path';
 
-const execAsync = util.promisify(exec);
+const BACKEND = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get('mode');
-  const idx = searchParams.get('idx');
+  const idx  = searchParams.get('idx');
+
+  let upstreamUrl: string;
+
+  if (mode === 'fetch') {
+    upstreamUrl = `${BACKEND}/predict/fetch`;
+  } else if (mode === 'predict' && idx !== null) {
+    upstreamUrl = `${BACKEND}/predict/run?idx=${idx}`;
+  } else {
+    return NextResponse.json(
+      { error: 'Invalid mode or missing parameters' },
+      { status: 400 }
+    );
+  }
 
   try {
-    const pythonScriptDir = path.join(process.cwd(), '..', '..');
-    
-    let command = '';
-    if (mode === 'fetch') {
-      command = `uv run python predict_api.py --mode fetch`;
-    } else if (mode === 'predict' && idx !== null) {
-      command = `uv run python predict_api.py --mode predict --idx ${idx}`;
-    } else {
-      return NextResponse.json({ error: 'Invalid mode or missing parameters' }, { status: 400 });
+    const res = await fetch(upstreamUrl, { cache: 'no-store' });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`Backend error (${res.status}):`, text);
+      return NextResponse.json(
+        { error: 'Backend returned an error', details: text },
+        { status: res.status }
+      );
     }
 
-    const { stdout, stderr } = await execAsync(command, { cwd: pythonScriptDir, timeout: 60000 });
-    
-    try {
-      const jsonStart = stdout.indexOf('{');
-      const jsonEnd = stdout.lastIndexOf('}') + 1;
-      const jsonStr = stdout.substring(jsonStart, jsonEnd);
-      
-      const predictionData = JSON.parse(jsonStr);
-      return NextResponse.json(predictionData);
-    } catch (parseError) {
-      console.error("Failed to parse Python output:", stdout);
-      return NextResponse.json({ error: 'Failed to parse model output' }, { status: 500 });
-    }
+    const data = await res.json();
+    return NextResponse.json(data);
 
-  } catch (error: any) {
-    console.error("API Error executing Python:", error);
-    return NextResponse.json({ error: 'Failed to run machine learning model', details: error.message }, { status: 500 });
+  } catch (err: any) {
+    console.error('Failed to reach FastAPI backend:', err);
+    return NextResponse.json(
+      { error: 'Could not reach the prediction backend', details: err.message },
+      { status: 502 }
+    );
   }
 }

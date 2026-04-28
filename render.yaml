@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ev-energy-prediction-api
+    runtime: python
+    rootDir: backend          # Render looks inside this sub-folder
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
