@@ -42,9 +42,8 @@ df_day['hour'] = df_day['connectionTime'].dt.hour
 df_day['day_of_week_encoded'] = pd.factorize(df_day['day_of_week'].fillna('Monday'))[0]
 df_day['is_weekend'] = (df_day['day_of_week_encoded'] >= 5).astype(int)
 df_day['duration_hours'] = (df_day['disconnectTime'] - df_day['connectionTime']).dt.total_seconds() / 3600
-
-df_day['charging_efficiency'] = df_day['kWhDelivered'] / df_day['parsed_kWhRequested'].replace(0, np.nan)
-df_day['requested_gap'] = df_day['parsed_kWhRequested'] - df_day['kWhDelivered']
+from _internal_features import add_advanced_features
+df_day = add_advanced_features(df_day)
 df_day['energy_per_minute'] = df_day['parsed_kWhRequested'] / (df_day['parsed_minutesAvailable'] + 1e-5)
 df_day['request_efficiency'] = df_day['parsed_milesRequested'] / (df_day['parsed_WhPerMile'] + 1e-5)
 df_day['urgency_flex_interaction'] = df_day['urgency_score'] * df_day['flexibility_index']
