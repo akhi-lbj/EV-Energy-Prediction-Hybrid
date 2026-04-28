@@ -28,8 +28,8 @@ df['month'] = df['connectionTime'].dt.month
 df['day_of_week_encoded'] = pd.factorize(df['day_of_week'].fillna('Monday'))[0]
 df['is_weekend'] = (df['day_of_week_encoded'] >= 5).astype(int)
 df['duration_hours'] = (df['disconnectTime'] - df['connectionTime']).dt.total_seconds() / 3600
-df['charging_efficiency'] = df['kWhDelivered'] / df['parsed_kWhRequested'].replace(0, np.nan)
-df['requested_gap'] = df['parsed_kWhRequested'] - df['kWhDelivered']
+from _internal_features import add_advanced_features
+df = add_advanced_features(df)
 df['energy_per_minute'] = df['parsed_kWhRequested'] / (df['parsed_minutesAvailable'] + 1e-5)
 df['request_efficiency'] = df['parsed_milesRequested'] / (df['parsed_WhPerMile'] + 1e-5)
 df['urgency_flex_interaction'] = df['urgency_score'] * df['flexibility_index']
