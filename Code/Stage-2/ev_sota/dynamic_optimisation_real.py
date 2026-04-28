@@ -31,7 +31,7 @@ df = pd.read_csv("acn_enhanced_final_2019_data.csv")
 df['connectionTime'] = pd.to_datetime(df['connectionTime'], errors='coerce', utc=True)
 df['disconnectTime'] = pd.to_datetime(df['disconnectTime'], errors='coerce', utc=True)
 
-selected_date = '2019-07-30'   # ← Change this date as needed
+selected_date = '2019-07-26'   # ← Change this date as needed
 df['date'] = df['connectionTime'].dt.date.astype(str)
 df_day = df[df['date'] == selected_date].copy()
 
@@ -226,58 +226,9 @@ def plot_before_after(active_sessions, schedule_df, optimal_peak, selected_date)
     plt.savefig(f'before_after_optimization_{selected_date}.png', dpi=300, bbox_inches='tight')
     print(f"[SUCCESS] Before vs After chart saved: before_after_optimization_{selected_date}.png")
 
-# 6.2 Colored Gantt Chart (Urgency Aware)
-def plot_gantt_chart(schedule_df, active_sessions, selected_date, optimal_peak):
-    if schedule_df.empty:
-        print("No schedule generated.")
-        return
-    
-    top_users = active_sessions['parsed_userID'].value_counts().head(15).index.tolist()
-    user_map = {uid: idx for idx, uid in enumerate(top_users)}
-    
-    plt.figure(figsize=(16, 11))
-    
-    for _, row in schedule_df.iterrows():
-        uid = row['user_id']
-        if uid not in user_map: continue
-        y = user_map[uid]
-        start = row['time_slot']
-        urgency = row.get('urgency', 50)
-        
-        if urgency >= 75:
-            color = '#d32f2f'   # Dark Red
-        elif urgency >= 60:
-            color = '#ff9800'   # Orange
-        elif urgency >= 45:
-            color = '#ffeb3b'   # Yellow
-        else:
-            color = '#4caf50'   # Green
-            
-        plt.barh(y, 1, left=start, height=0.65, color=color, alpha=0.9, edgecolor='black')
-    
-    # Legend
-    from matplotlib.patches import Patch
-    legend_elements = [
-        Patch(facecolor='#d32f2f', label='Very High Urgency (≥75)'),
-        Patch(facecolor='#ff9800', label='High Urgency (60-74)'),
-        Patch(facecolor='#ffeb3b', label='Medium Urgency (45-59)'),
-        Patch(facecolor='#4caf50', label='Low Urgency (<45)')
-    ]
-    plt.legend(handles=legend_elements, title='Urgency Level', loc='center left', bbox_to_anchor=(1, 0.5))
-    
-    plt.yticks(range(len(top_users)), [f"User {int(uid)}" for uid in top_users])
-    plt.xlabel('Time Slot (15-minute intervals)')
-    plt.ylabel('User ID (Different Cars)')
-    plt.title(f'Smart EV Charging Gantt Chart - {selected_date}\nPeak Load: {optimal_peak:.1f} kW (Priority + Urgency Aware)')
-    plt.grid(True, axis='x', alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(f'gantt_chart_urgency_{selected_date}.png', dpi=300, bbox_inches='tight')
-    print(f"[SUCCESS] Urgency-colored Gantt Chart saved: gantt_chart_urgency_{selected_date}.png")
-
 # ====================== RUN EVERYTHING ======================
 plot_before_after(active_sessions, schedule_df, optimal_peak, selected_date)
-plot_gantt_chart(schedule_df, active_sessions, selected_date, optimal_peak)
 
 print("\nStage-3 Complete!")
 print(f"Date: {selected_date} | Sessions: {len(active_sessions)} | Final Peak: {optimal_peak:.1f} kW")
-print("Both charts generated successfully!")
+print("Optimization chart generated successfully!")
